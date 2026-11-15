@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Melt &amp; Study</title>
+<style>
+:root{--card:rgba(255,255,255,.22);--line:rgba(255,255,255,.38);--ink:#2b2d5c;--soft:rgba(43,45,92,.62);--pink:rgba(185,120,235,.8);--grad:linear-gradient(120deg,rgba(208,112,214,.82),rgba(112,124,236,.78));--pinkShadow:rgba(60,50,150,.4);--chip:rgba(255,255,255,.3);--track:rgba(255,255,255,.3);--sel:rgba(170,120,240,.2);--tint:radial-gradient(120% 70% at 50% 0%,rgba(200,110,220,.16),rgba(60,90,200,.10) 60%,rgba(40,170,200,.08))}
+@media (prefers-color-scheme:dark){:root{--card:rgba(255,255,255,.06);--line:rgba(190,200,255,.14);--ink:#ece8ff;--soft:rgba(220,222,255,.6);--pink:rgba(190,130,240,.65);--grad:linear-gradient(120deg,rgba(196,100,206,.6),rgba(96,110,226,.58));--pinkShadow:rgba(20,20,70,.55);--chip:rgba(190,200,255,.09);--track:rgba(190,200,255,.1);--sel:rgba(170,110,240,.16);--tint:radial-gradient(120% 70% at 50% 0%,rgba(190,90,215,.2),rgba(50,70,190,.14) 60%,rgba(30,150,190,.1))}}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--tint);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,sans-serif;-webkit-user-select:none;user-select:none;overflow:hidden;cursor:default}
+button{font:inherit;color:inherit;cursor:pointer}
+.top{height:34px;display:flex;align-items:center;justify-content:center;position:relative;font-size:12px;font-weight:700;color:var(--soft);letter-spacing:.3px}
+.pin{position:absolute;right:8px;top:6px;width:26px;height:22px;border:0;background:none;font-size:13px;opacity:.35;border-radius:6px}
+.pin.on{opacity:1}
+.pin:hover{background:var(--chip)}
+.screen{display:none;flex-direction:column;align-items:center;padding:0 16px 14px;height:calc(100% - 34px)}
+.screen.show{display:flex}
+h1{font-size:15px;margin:2px 0 10px}
+.modes{display:flex;gap:10px;width:100%}
+.mode{flex:1;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:4px 4px 8px;text-align:center;transition:.15s}
+.mode svg{width:100%;height:100px;display:block}
+svg .shadow{opacity:.05}
+.scene svg,.mode svg{opacity:.93}
+.mode span{font-size:12.5px;font-weight:700}
+.mode.sel{border-color:var(--pink);background:var(--sel);transform:translateY(-2px)}
+.dur{margin:16px 0 8px;display:flex;align-items:center;gap:12px}
+.round{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:16px;font-weight:800}
+.mins{font-size:28px;font-weight:800;min-width:70px;text-align:center}
+.mins small{font-size:12px;font-weight:700;color:var(--soft);margin-left:2px}
+.chips{display:flex;gap:6px}
+.chip{border:0;background:var(--chip);border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:700}
+.chip.sel{background:var(--grad);color:#fff}
+.go{margin-top:auto;width:100%;border:0;border-radius:16px;padding:11px;background:var(--grad);color:#fff;font-size:15px;font-weight:800;box-shadow:0 3px 0 var(--pinkShadow)}
+.go:active,.btn:active{transform:translateY(2px)}
+.today{font-size:11px;color:var(--soft);margin-top:9px;font-weight:600}
+.scene{width:100%;height:205px;transition:opacity .3s,filter .3s}
+.scene svg{width:100%;height:100%;display:block}
+.time{font-size:38px;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;line-height:1.1}
+.msg{font-size:12px;color:var(--soft);font-weight:600;min-height:30px;text-align:center;margin-top:3px}
+.bar{width:100%;height:8px;border-radius:99px;background:var(--track);overflow:hidden;margin:4px 0 0}
+.bar i{display:block;height:100%;background:var(--grad);border-radius:99px;width:0;transition:width .3s}
+.row{display:flex;gap:8px;width:100%;margin-top:auto}
+.btn{flex:1;border:2px solid var(--line);background:var(--card);border-radius:14px;padding:9px;font-size:13px;font-weight:700}
+.btn.main{background:var(--grad);border-color:transparent;color:#fff}
+.paused .scene{opacity:.5;filter:saturate(.5)}
+/* little animations */
+.flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick 1.6s ease-in-out infinite}
+@keyframes flick{0%,100%{transform:scale(1,1) skewX(0)}25%{transform:scale(.94,1.07) skewX(3deg)}50%{transform:scale(1.04,.95) skewX(-2deg)}75%{transform:scale(.97,1.04) skewX(1.5deg)}}
+.glow{animation:glow 2.2s ease-in-out infinite}
+@keyframes glow{50%{opacity:.55}}
+.drop{animation:drip 2.4s ease-in infinite;opacity:0}
+@keyframes drip{0%{transform:translateY(0);opacity:0}15%{opacity:1}80%{opacity:1}100%{transform:translateY(16px);opacity:0}}
+.twinkle{transform-box:fill-box;transform-origin:center;animation:tw 2.6s ease-in-out infinite}
+@keyframes tw{0%,100%{transform:scale(.4);opacity:.2}50%{transform:scale(1);opacity:1}}
+.smoke{animation:smoke 3s ease-out infinite;opacity:0}
+@keyframes smoke{0%{transform:translateY(0);opacity:0}20%{opacity:.8}100%{transform:translateY(-34px);opacity:0}}
+.bob{animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-1.5px)}}
+.paused .flame,.paused .drop,.paused .twinkle,.paused .glow{animation-play-state:paused}
+</style>
+</head>
+<body>
+<div class="top">melt &amp; study<button class="pin on" id="pin" title="Keep on top">📌</button></div>
+
+<section class="screen" id="home">
+  <h1>what's melting today?</h1>
+  <div class="modes">
+    <button class="mode" data-mode="ice"><div id="miniIce"></div><span>ice bowl</span></button>
+    <button class="mode" data-mode="candle"><div id="miniCandle"></div><span>candle</span></button>
+  </div>
+  <div class="dur">
+    <button class="round" id="minus">−</button>
+    <div class="mins"><b id="minsVal">25</b><small>min</small></div>
+    <button class="round" id="plus">+</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <button class="go" id="start">start studying ✨</button>
+  <div class="today" id="today"></div>
+</section>
+
+<section class="screen" id="run">
+  <div class="scene" id="scene"></div>
+  <div class="time" id="time">25:00</div>
+  <div class="bar"><i id="barFill"></i></div>
+  <div class="msg" id="msg"></div>
+  <div class="row" id="runBtns">
+    <button class="btn" id="stop">stop</button>
+    <button class="btn main" id="pause">pause</button>
+  </div>
+  <div class="row" id="doneBtns" style="display:none">
+    <button class="btn" id="homeBtn">home</button>
+    <button class="btn main" id="again">again 🔁</button>
+  </div>
+</section>
+
+<script>
+const INK = '#2b2d5c';
+const $ = s => document.querySelector(s);
+const native = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.app;
+const send = m => { try { native && native.postMessage(m); } catch (e) {} };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const f = n => Math.round(n * 10) / 10;
+
+/* ---------- shared bits ---------- */
+const star = (x, y, delay, s = 1) =>
+  `<g transform="translate(${x} ${y}) scale(${s})"><path class="twinkle" style="animation-delay:${delay}s" fill="#9fe9ff" d="M0 -5 L1.3 -1.3 L5 0 L1.3 1.3 L0 5 L-1.3 1.3 L-5 0 L-1.3 -1.3Z"/></g>`;
+const blush = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="5.5" ry="3.2" fill="#e98ad6" opacity=".45"/>`;
+
+/* ---------- ICE BOWL ---------- */
+const CUBES = [
+  { x: 74, y: 104, r: -14, s: 26, d: .06 },
+  { x: 127, y: 105, r: 12, s: 25, d: .12 },
+  { x: 100, y: 101, r: 4, s: 30, d: 0 },
+  { x: 103, y: 80, r: -9, s: 23, d: .22 },
+];
+function iceSVG(id) {
+  return `<svg viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="${id}rim"><ellipse cx="100" cy="112" rx="70" ry="12"/></clipPath>
+    <linearGradient id="${id}bowl" x1="0" x2="1"><stop offset="0" stop-color="#cdbcff"/><stop offset="1" stop-color="#9a86ee"/></linearGradient>
+  </defs>
+  <ellipse cx="100" cy="186" rx="58" ry="7" fill="#000" opacity=".06"/>
+  <path d="M80 170 h40 l-3 11 h-34 z" fill="#9a86ee" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+  <ellipse cx="100" cy="112" rx="72" ry="13" fill="#e2dcff" stroke="${INK}" stroke-width="2.5"/>
+  <g clip-path="url(#${id}rim)"><ellipse class="water" cx="100" cy="124" rx="46" ry="8" fill="#74d6e8" opacity="0"/></g>
+  <g class="cubes"></g>
+  <g class="drops">
+    <g transform="translate(86 96)"><path class="drop" d="M0 -4 C2 -1 3 1 3 2 A3 3 0 0 1 -3 2 C-3 1 -2 -1 0 -4Z" fill="#74d6e8" stroke="${INK}" stroke-width="1.2"/></g>
+    <g transform="translate(118 92)"><path class="drop" style="animation-delay:1.2s" d="M0 -4 C2 -1 3 1 3 2 A3 3 0 0 1 -3 2 C-3 1 -2 -1 0 -4Z" fill="#74d6e8" stroke="${INK}" stroke-width="1.2"/></g>
+  </g>
+  <path d="M28 112 A72 13 0 0 0 172 112 C172 150 142 174 100 174 C58 174 28 150 28 112 Z" fill="url(#${id}bowl)" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M40 130 C44 146 54 156 66 162" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".6"/>
+  <g class="face"></g>
+  ${star(36, 66, 0)}${star(168, 76, .9, .8)}${star(154, 36, 1.7, .7)}${star(48, 30, 2.2, .6)}
+</svg>`;
+}
+function iceUpdate(svg, p, state) {
+  const water = svg.querySelector('.water');
+  water.setAttribute('cy', f(124 - p * 12));
+  water.setAttribute('rx', f(46 + p * 22));
+  water.setAttribute('ry', f(8 + p * 2));
+  water.setAttribute('opacity', f(clamp(p * 8) * .85));
+  let cubes = '';
+  let left = 0;
+  for (const c of CUBES) {
+    const pi = clamp(p / (1 - c.d));
+    const sz = c.s * (1 - pi);
+    if (sz < 2) continue;
+    left++;
+    const h = sz / 2, rr = 4 + pi * sz * .35;
+    // shrink but keep floating at the water line so they stay visible
+    const y = Math.min(c.y + (c.s - sz) * .3 + (c.y < 90 ? pi * 22 : 0), 113 - sz * .45);
+    let face = '';
+    if (sz > 12) {
+      const er = Math.max(1.2, sz * .055);
+      face = `<circle cx="${f(-sz * .17)}" cy="${f(sz * .07)}" r="${f(er)}" fill="${INK}"/><circle cx="${f(sz * .17)}" cy="${f(sz * .07)}" r="${f(er)}" fill="${INK}"/>
+        <path d="M${f(-sz * .08)} ${f(sz * .18)} q${f(sz * .08)} ${f(sz * .08)} ${f(sz * .16)} 0" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>`;
+    }
+    cubes += `<g transform="translate(${c.x} ${f(y)}) rotate(${c.r})">
+      <rect x="${f(-h)}" y="${f(-h)}" width="${f(sz)}" height="${f(sz)}" rx="${f(Math.min(rr, h))}" fill="#dcf3ff" stroke="${INK}" stroke-width="2"/>
+      <rect x="${f(-h + sz * .16)}" y="${f(-h + sz * .14)}" width="${f(sz * .3)}" height="${f(sz * .13)}" rx="${f(sz * .06)}" fill="#fff"/>
+      ${face}</g>`;
+  }
+  svg.querySelector('.cubes').innerHTML = cubes;
+  svg.querySelector('.drops').style.display = (state === 'run' && left) ? '' : 'none';
+  const happy = state === 'done';
+  svg.querySelector('.face').innerHTML = happy
+    ? `<path d="M75 142 q5 -6 10 0 M115 142 q5 -6 10 0" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>${blush(70, 150)}${blush(130, 150)}
+       <path d="M92 148 q8 9 16 0" fill="#e98ad6" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`
+    : `<circle cx="80" cy="141" r="3.3" fill="${INK}"/><circle cx="120" cy="141" r="3.3" fill="${INK}"/>${blush(70, 149)}${blush(130, 149)}
+       <path d="M94 147 q6 6 12 0" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`;
+}
+
+/* ---------- CANDLE ---------- */
+function candleSVG(id) {
+  const wisp = d => `<path class="smoke" style="animation-delay:${d}s" d="M0 0 c-4 -5 4 -9 0 -14 c-4 -5 4 -9 0 -14" fill="none" stroke="#b8c4ea" stroke-width="2.2" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="${id}wax" x1="0" x2="1"><stop offset="0" stop-color="#eed6fc"/><stop offset="1" stop-color="#c29ae8"/></linearGradient>
+    <radialGradient id="${id}glow"><stop offset="0" stop-color="#ffd76a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd76a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="${id}fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset=".6" stop-color="#ffd25e"/><stop offset="1" stop-color="#fff2b0"/></linearGradient>
+  </defs>
+  <ellipse cx="100" cy="186" rx="60" ry="7" fill="#000" opacity=".06"/>
+  <ellipse cx="100" cy="171" rx="64" ry="13" fill="#b7c4f5" stroke="${INK}" stroke-width="2.5"/>
+  <ellipse cx="100" cy="168" rx="48" ry="8" fill="#d9e0ff"/>
+  <ellipse class="pool" cx="100" cy="168" rx="24" ry="5" fill="#d6a6f0" stroke="${INK}" stroke-width="1.6"/>
+  <g class="body"></g>
+  <g class="flameWrap" transform="translate(100 50)">
+    <circle class="glow" cx="0" cy="-10" r="32" fill="url(#${id}glow)"/>
+    <g class="flame">
+      <path d="M0 -27 C8 -15 11 -7 11 -1 A11 11 0 0 1 -11 -1 C-11 -7 -8 -15 0 -27Z" fill="url(#${id}fl)" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M0 -12 C3 -7 5 -4 5 -1 A5 5 0 0 1 -5 -1 C-5 -4 -3 -7 0 -12Z" fill="#fff8de"/>
+    </g>
+  </g>
+  <g class="smokeWrap" transform="translate(100 50)" style="display:none">${wisp(0)}<g transform="translate(5 0)">${wisp(1)}</g><g transform="translate(-4 0)">${wisp(2)}</g></g>
+  ${star(36, 70, .3)}${star(166, 60, 1.2, .8)}${star(150, 120, 2, .6)}${star(44, 128, 1.6, .7)}
+</svg>`;
+}
+function candleUpdate(svg, p, state, id) {
+  const H = 12 + 104 * (1 - p), top = 166 - H, x0 = 77, W = 46;
+  const pool = svg.querySelector('.pool');
+  pool.setAttribute('rx', f(24 + p * 22));
+  pool.setAttribute('ry', f(5 + p * 3));
+  const edge = dx => top + 6 * Math.sqrt(1 - (dx / 23) ** 2);
+  const drip = (x, L) => L > 2 ? `<path d="M${f(x - 4.5)} ${f(edge(x - 100) - 3)} V${f(edge(x - 100) + L)} a4.5 4.5 0 0 0 9 0 V${f(edge(x - 100) - 3)} Z" fill="#f6ebff" stroke="${INK}" stroke-width="2"/>` : '';
+  let face = '';
+  if (H > 30) {
+    const fy = top + Math.min(32, H * .55);
+    const sleepy = p > .8 && state !== 'done';
+    face = (sleepy
+      ? `<path d="M88 ${f(fy)} h7 M105 ${f(fy)} h7" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`
+      : `<circle cx="91" cy="${f(fy)}" r="2.7" fill="${INK}"/><circle cx="109" cy="${f(fy)}" r="2.7" fill="${INK}"/>`)
+      + blush(85, fy + 6) + blush(115, fy + 6)
+      + `<path d="M96 ${f(fy + 5)} q4 4 8 0" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`;
+  }
+  const done = state === 'done';
+  svg.querySelector('.body').innerHTML = `
+    <path d="M${x0} ${f(top)} V166 A23 6 0 0 0 ${x0 + W} 166 V${f(top)} Z" fill="url(#${id}wax)" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${H > 20 ? `<rect x="83" y="${f(top + 9)}" width="5" height="${f(H - 18)}" rx="2.5" fill="#fff" opacity=".55"/>` : ''}
+    ${face}
+    ${drip(85, Math.min(15, H - 14))}${drip(114, Math.min(25, H - 14))}
+    <ellipse cx="100" cy="${f(top)}" rx="23" ry="6" fill="#f6ebff" stroke="${INK}" stroke-width="2.2"/>
+    <ellipse cx="100" cy="${f(top + .5)}" rx="${f(10 + p * 6)}" ry="2.8" fill="#d6a6f0"/>
+    <line x1="100" y1="${f(top)}" x2="100" y2="${f(top - (done ? 6 : 10))}" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`;
+  const fw = svg.querySelector('.flameWrap'), sw = svg.querySelector('.smokeWrap');
+  fw.setAttribute('transform', `translate(100 ${f(top - 8)})`);
+  sw.setAttribute('transform', `translate(100 ${f(top - 9)})`);
+  fw.style.display = done ? 'none' : '';
+  sw.style.display = done ? '' : 'none';
+}
+
+/* ---------- scene mounting ---------- */
+let uid = 0;
+function mount(el, mode) {
+  const id = 's' + (uid++);
+  el.innerHTML = mode === 'ice' ? iceSVG(id) : candleSVG(id);
+  const svg = el.querySelector('svg');
+  return (p, state) => mode === 'ice' ? iceUpdate(svg, p, state) : candleUpdate(svg, p, state, id);
+}
+mount($('#miniIce'), 'ice')(.3, 'run');
+mount($('#miniCandle'), 'candle')(.25, 'run');
+
+/* ---------- app state ---------- */
+let mode = store.get('mode', 'ice');
+let minutes = store.get('minutes', 25);
+let run = store.get('run', null); // {mode,start,dur,pausedAt,pausedMs}
+let draw = null, lastP = -1;
+
+const MSGS = {
+  ice: ['the ice is melting… keep going 🧊', 'drip, drip — focus mode on', 'sip of water, then back to it 💧', 'you + this bowl = unstoppable', 'tiny puddle, big progress', 'stay cool, keep studying ❄️'],
+  candle: ['the candle is glowing for you 🕯️', 'slow and steady, like wax', 'stay cozy, stay focused', 'one page at a time ✨', 'the flame believes in you', 'warm thoughts, sharp mind'],
+};
+const DONE_MSGS = { ice: 'all melted! you did it 💦', candle: 'the candle is done — so are you 🌙' };
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('show', s.id === id));
+}
+function renderHome() {
+  document.querySelectorAll('.mode').forEach(b => b.classList.toggle('sel', b.dataset.mode === mode));
+  $('#minsVal').textContent = minutes;
+  $('#chips').innerHTML = [15, 25, 45, 60].map(m => `<button class="chip${m === minutes ? ' sel' : ''}" data-m="${m}">${m}</button>`).join('');
+  const st = todayStats();
+  $('#today').textContent = st.count ? `today: ${st.count} session${st.count > 1 ? 's' : ''} · ${st.mins} min 🌟` : 'no sessions yet today — let\'s go!';
+  show('home');
+}
+function todayKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function todayStats() { const s = store.get('stats', null); return s && s.date === todayKey() ? s : { date: todayKey(), count: 0, mins: 0 }; }
+
+const elapsed = () => (run.pausedAt || Date.now()) - run.start - run.pausedMs;
+function fmt(ms) {
+  const t = Math.ceil(Math.max(0, ms) / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function startRun() {
+  run = { mode, start: Date.now(), dur: minutes * 60000, pausedAt: 0, pausedMs: 0 };
+  store.set('run', run);
+  openRun();
+}
+function openRun() {
+  draw = mount($('#scene'), run.mode);
+  lastP = -1;
+  $('#runBtns').style.display = ''; $('#doneBtns').style.display = 'none';
+  show('run');
+  tick();
+}
+function tick() {
+  if (!run || run.finished) return;
+  const e = elapsed(), p = clamp(e / run.dur);
+  document.body.classList.toggle('paused', !!run.pausedAt);
+  $('#pause').textContent = run.pausedAt ? 'resume' : 'pause';
+  $('#time').textContent = fmt(run.dur - e);
+  $('#barFill').style.width = (p * 100).toFixed(1) + '%';
+  $('#msg').textContent = run.pausedAt ? 'paused — take a breath ☁️' : MSGS[run.mode][Math.floor(e / 25000) % MSGS[run.mode].length];
+  if (Math.abs(p - lastP) > .0005) { draw(p, 'run'); lastP = p; }
+  if (p >= 1) finish();
+}
+function finish() {
+  run.finished = true;
+  const st = todayStats(); st.count++; st.mins += Math.round(run.dur / 60000); store.set('stats', st);
+  store.del('run');
+  document.body.classList.remove('paused');
+  draw(1, 'done');
+  $('#time').textContent = 'done! ✨';
+  $('#barFill').style.width = '100%';
+  $('#msg').textContent = DONE_MSGS[run.mode] + ` (${Math.round(run.dur / 60000)} min)`;
+  $('#runBtns').style.display = 'none'; $('#doneBtns').style.display = '';
+  if (native) send({ type: 'done' }); else chime();
+}
+function chime() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [659, 784, 1047].forEach((hz, i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * .18;
+      o.frequency.value = hz; o.type = 'sine';
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.25, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + .6);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .65);
+    });
+  } catch (e) {}
+}
+function togglePause() {
+  if (!run || run.finished) return;
+  if (run.pausedAt) { run.pausedMs += Date.now() - run.pausedAt; run.pausedAt = 0; }
+  else run.pausedAt = Date.now();
+  store.set('run', run); tick();
+}
+let stopArmed = null;
+function stopRun() {
+  const btn = $('#stop');
+  if (!stopArmed) {
+    btn.textContent = 'sure? 🥺';
+    stopArmed = setTimeout(() => { btn.textContent = 'stop'; stopArmed = null; }, 2500);
+    return;
+  }
+  clearTimeout(stopArmed); stopArmed = null; btn.textContent = 'stop';
+  run = null; store.del('run'); document.body.classList.remove('paused');
+  renderHome();
+}
+
+/* ---------- events ---------- */
+document.querySelectorAll('.mode').forEach(b => b.onclick = () => { mode = b.dataset.mode; store.set('mode', mode); renderHome(); });
+$('#chips').onclick = e => { const m = e.target.dataset.m; if (m) { minutes = +m; store.set('minutes', minutes); renderHome(); } };
+$('#minus').onclick = () => { minutes = Math.max(5, minutes - 5); store.set('minutes', minutes); renderHome(); };
+$('#plus').onclick = () => { minutes = Math.min(180, minutes + 5); store.set('minutes', minutes); renderHome(); };
+$('#start').onclick = startRun;
+$('#pause').onclick = togglePause;
+$('#stop').onclick = stopRun;
+$('#again').onclick = () => { mode = run.mode; startRun(); };
+$('#homeBtn').onclick = () => { run = null; renderHome(); };
+let pinned = store.get('pinned', true);
+const setPin = v => { pinned = v; store.set('pinned', v); $('#pin').classList.toggle('on', v); send({ type: 'pin', on: v }); };
+$('#pin').onclick = () => setPin(!pinned);
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); if (run && !run.finished) togglePause(); else if (!run) startRun(); } });
+
+setPin(pinned);
+if (run) openRun(); else renderHome();
+setInterval(tick, 250);
+</script>
+</body>
+</html>
